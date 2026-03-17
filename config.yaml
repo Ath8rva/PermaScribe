@@ -1,0 +1,35 @@
+recording:
+  chunk_duration: 30          # seconds per audio chunk
+  sample_rate: 16000
+  silence_threshold: 50       # RMS below this = silence, skip transcription
+  delete_audio_after_transcription: true
+
+transcription:
+  model: "base"               # tiny, base, small (base recommended for budget laptops ~5-8s per 30s chunk on CPU)
+  device: "cpu"               # cpu for budget i5 laptops, cuda if you have a GPU
+  language: "en"              # or null for auto-detect
+
+summarization:
+  model: "deepseek-v3.1:671b-cloud"   # Ollama model name
+  trigger_time: "18:00"       # When to generate daily summary (24h format)
+  ollama_url: "http://localhost:11434"
+  hourly_chunk_minutes: 60    # Group transcripts into N-minute blocks for summarization
+
+email:
+  enabled: false
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_user: ""
+  smtp_password: ""           # Use Gmail App Password, not your real password
+  to: ""
+  subject_prefix: "[PermaScribe]"
+
+web:
+  host: "0.0.0.0"              # 0.0.0.0 = accessible from other devices on the network
+  port: 5000
+
+storage:
+  data_dir: "data"
+  retain_audio_days: 0        # 0 = delete after transcription
+  retain_transcripts_days: 365
+  retain_summaries_days: 0    # 0 = keep forever

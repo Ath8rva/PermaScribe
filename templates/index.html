@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PermaScribe — {{ date }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        body { max-width: 900px; }
+        .status-bar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 0.5rem 1rem; background: #1a1a2e; border-radius: 8px; font-size: 0.9em; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status-dot.on { background: #00ff88; }
+        .status-dot.off { background: #ff4444; }
+        .nav-dates { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .nav-dates a { padding: 0.3rem 0.6rem; background: #16213e; border-radius: 4px; text-decoration: none; font-size: 0.85em; }
+        .nav-dates a:hover { background: #0f3460; }
+        .summary-content { line-height: 1.7; }
+        .summary-content h2 { margin-top: 2rem; border-bottom: 1px solid #333; padding-bottom: 0.3rem; }
+        .actions { display: flex; gap: 0.5rem; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+    <h1>PermaScribe</h1>
+
+    <div class="status-bar">
+        <span><span class="status-dot on" id="rec-dot"></span> Recording</span>
+        <span>{{ transcript_count }} chunks today</span>
+        <span>{{ date }}</span>
+    </div>
+
+    <div class="nav-dates">
+        <a href="/">Today</a>
+        <a href="/history">All History</a>
+        {% for d in dates %}
+            {% if d != date %}
+                <a href="/day/{{ d }}">{{ d }}</a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="actions">
+        <form action="/summarize" method="post" style="margin:0;">
+            <button type="submit">Generate Summary Now</button>
+        </form>
+        <a href="/transcripts/{{ date }}"><button>View Raw Transcripts</button></a>
+    </div>
+
+    {% if summary_html %}
+        <div class="summary-content">
+            {{ summary_html | safe }}
+        </div>
+    {% else %}
+        <p style="color: #888; font-style: italic;">
+            No summary yet for {{ date }}. It will be generated automatically at the scheduled time,
+            or you can trigger it manually above.
+        </p>
+    {% endif %}
+
+    <script>
+        // Poll status every 30s to update recording indicator
+        setInterval(async () => {
+            try {
+                const r = await fetch('/status');
+                const s = await r.json();
+                document.getElementById('rec-dot').className =
+                    'status-dot ' + (s.recording ? 'on' : 'off');
+            } catch(e) {}
+        }, 30000);
+    </script>
+</body>
+</html>

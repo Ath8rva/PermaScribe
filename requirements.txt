@@ -1,0 +1,8 @@
+sounddevice>=0.5
+numpy>=1.26
+scipy>=1.12
+faster-whisper>=1.1
+flask>=3.0
+pyyaml>=6.0
+schedule>=1.2
+markdown>=3.5

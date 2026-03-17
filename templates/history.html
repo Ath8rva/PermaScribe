@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PermaScribe — {% if transcript_date %}Transcripts {{ transcript_date }}{% else %}History{% endif %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        body { max-width: 900px; }
+        .entry { padding: 0.8rem 1rem; margin-bottom: 0.5rem; background: #1a1a2e; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .entry a { text-decoration: none; font-weight: bold; }
+        .entry .meta { color: #888; font-size: 0.85em; }
+        .transcript-block { margin-bottom: 1rem; padding: 1rem; background: #1a1a2e; border-radius: 6px; border-left: 3px solid #0f3460; }
+        .transcript-block .time { color: #00ff88; font-size: 0.85em; margin-bottom: 0.3rem; }
+    </style>
+</head>
+<body>
+    <h1><a href="/" style="text-decoration:none;">PermaScribe</a></h1>
+
+    {% if transcripts is not none %}
+        <h2>Raw Transcripts — {{ transcript_date }}</h2>
+        <p><a href="/day/{{ transcript_date }}">&larr; Back to summary</a></p>
+
+        {% if transcripts %}
+            {% for t in transcripts %}
+                <div class="transcript-block">
+                    <div class="time">{{ t.time }}</div>
+                    <div>{{ t.content }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #888;">No transcripts found for this date.</p>
+        {% endif %}
+
+    {% else %}
+        <h2>Summary History</h2>
+        <p><a href="/">&larr; Back to today</a></p>
+
+        {% if entries %}
+            {% for e in entries %}
+                <div class="entry">
+                    <a href="/day/{{ e.date }}">{{ e.date }}</a>
+                    <span class="meta">{{ e.transcript_count }} chunks</span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #888;">No summaries generated yet. Start recording and wait for the scheduled summary time.</p>
+        {% endif %}
+    {% endif %}
+</body>
+</html>
