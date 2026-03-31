@@ -10,7 +10,7 @@ from .config import get_data_dir
 
 logger = logging.getLogger(__name__)
 
-HOURLY_PROMPT = """You are summarizing a segment of continuous audio transcription from someone's day.
+HOURLY_PROMPT = """You are summarizing a segment of continuous audio transcription from someone's work day.
 Time period: {start_time} to {end_time}
 
 Extract the following from the transcript:
@@ -18,6 +18,13 @@ Extract the following from the transcript:
 - Any action items or to-dos mentioned
 - Any decisions made
 - Any notable quotes or important statements
+- Work activities: For each distinct work task or meeting in this segment, extract:
+  - Task description (what was discussed/worked on)
+  - Category: either "Client — <name>" for client work (e.g. Client — DB, Client — SPM, Client — Structuring, Client — Audit) or "AP — <department>" for Alitra Partners internal work (e.g. AP — HR, AP — Meraki, AP — Admin, AP — Accounts). If the person says a category keyword like "HR", "admin", a client name, etc., use it. If unclear, infer from context or write "Uncategorized".
+  - Time spent: if the person mentions duration ("one hour", "fifty minutes", "half hour", etc.), capture it as H:MM. If not mentioned, write "—".
+
+Format work activities as:
+WORK: <description> | <category> | <time spent>
 
 Be concise but thorough. If the transcript is mostly casual/idle talk, note that briefly.
 
@@ -27,10 +34,25 @@ Transcript:
 DAY_PROMPT = """You are creating an end-of-day summary from hourly summaries of a full day of audio transcription.
 Date: {date}
 
-Produce a well-structured markdown report with these sections:
+Produce a well-structured markdown report with EXACTLY these sections in this order:
 
 ## Day Overview
 A 2-3 sentence overview of the day.
+
+## Work Tracker
+
+Extract ALL work activities from the hourly summaries into a markdown table. Look for lines starting with "WORK:" in the hourly summaries. Also infer work activities from context even if not explicitly tagged.
+
+Categories must be one of:
+- "Client — <name>" for client work (DB, SPM, Structuring, Audit, etc.)
+- "AP — <department>" for Alitra Partners internal (HR, Meraki, Admin, Accounts, etc.)
+- "Uncategorized" if unclear
+
+| Task / Description | Category | Time Spent | Timestamp |
+|---|---|---|---|
+| Example: Discussing new hires | AP — HR | 1:00 | ~09:30 |
+
+If no work activities are found, write "No tracked work activities for this day."
 
 ## Key Conversations & Topics
 Bulleted list of main topics, conversations, and activities.

@@ -31,6 +31,7 @@ DEFAULT_CONFIG = {
     "web": {
         "host": "0.0.0.0",
         "port": 5000,
+        "password": "Vkool@123",
     },
     "storage": {
         "data_dir": "data",

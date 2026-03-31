@@ -27,6 +27,7 @@ email:
 web:
   host: "0.0.0.0"              # 0.0.0.0 = accessible from other devices on the network
   port: 5000
+  password: "Vkool@123"        # Dashboard login password
 
 storage:
   data_dir: "data"

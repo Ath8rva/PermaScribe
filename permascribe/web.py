@@ -1,10 +1,12 @@
 import logging
+import os
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
 
 import markdown
 import requests
-from flask import Flask, jsonify, render_template, redirect, url_for
+from flask import Flask, jsonify, render_template, redirect, url_for, request, session
 
 from .config import get_data_dir
 
@@ -13,7 +15,18 @@ logger = logging.getLogger(__name__)
 
 def create_app(config: dict, summarizer=None) -> Flask:
     app = Flask(__name__, template_folder=str(Path(__file__).parent.parent / "templates"))
+    app.secret_key = os.urandom(24)
     data_dir = get_data_dir(config)
+
+    DASHBOARD_PASSWORD = config.get("web", {}).get("password", "Vkool@123")
+
+    def login_required(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not session.get("authenticated"):
+                return redirect(url_for("login"))
+            return f(*args, **kwargs)
+        return decorated
 
     def _read_summary(date_str: str) -> str | None:
         path = data_dir / "summaries" / f"{date_str}.md"
@@ -49,11 +62,45 @@ def create_app(config: dict, summarizer=None) -> Flask:
             })
         return result
 
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        error = None
+        if request.method == "POST":
+            if request.form.get("password") == DASHBOARD_PASSWORD:
+                session["authenticated"] = True
+                return redirect(url_for("index"))
+            error = "Wrong password."
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PermaScribe - Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>body {{ max-width: 400px; margin-top: 15vh; }} .err {{ color: #ff4444; }}</style>
+</head>
+<body>
+    <h1>PermaScribe</h1>
+    <form method="post">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" autofocus required>
+        <button type="submit">Log in</button>
+        {'<p class="err">' + error + '</p>' if error else ''}
+    </form>
+</body>
+</html>"""
+
+    @app.route("/logout")
+    def logout():
+        session.clear()
+        return redirect(url_for("login"))
+
     @app.route("/")
+    @login_required
     def index():
         today = datetime.now().strftime("%Y-%m-%d")
         summary_md = _read_summary(today)
-        summary_html = markdown.markdown(summary_md) if summary_md else None
+        summary_html = markdown.markdown(summary_md, extensions=["tables"]) if summary_md else None
         transcript_count = _count_transcripts(today)
         return render_template(
             "index.html",
@@ -64,9 +111,10 @@ def create_app(config: dict, summarizer=None) -> Flask:
         )
 
     @app.route("/day/<date_str>")
+    @login_required
     def day(date_str: str):
         summary_md = _read_summary(date_str)
-        summary_html = markdown.markdown(summary_md) if summary_md else None
+        summary_html = markdown.markdown(summary_md, extensions=["tables"]) if summary_md else None
         transcript_count = _count_transcripts(date_str)
         return render_template(
             "index.html",
@@ -77,6 +125,7 @@ def create_app(config: dict, summarizer=None) -> Flask:
         )
 
     @app.route("/history")
+    @login_required
     def history():
         dates = _list_summary_dates()
         entries = []
@@ -88,6 +137,7 @@ def create_app(config: dict, summarizer=None) -> Flask:
         return render_template("history.html", entries=entries)
 
     @app.route("/transcripts/<date_str>")
+    @login_required
     def transcripts(date_str: str):
         items = _read_transcripts(date_str)
         return render_template(
@@ -98,6 +148,7 @@ def create_app(config: dict, summarizer=None) -> Flask:
         )
 
     @app.route("/summarize", methods=["POST"])
+    @login_required
     def trigger_summarize():
         if summarizer is None:
             return jsonify({"error": "Summarizer not available"}), 503
@@ -114,6 +165,7 @@ def create_app(config: dict, summarizer=None) -> Flask:
             return jsonify({"error": str(e)}), 500
 
     @app.route("/status")
+    @login_required
     def status():
         # Check Ollama
         ollama_ok = False
